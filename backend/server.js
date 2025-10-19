@@ -1,4 +1,6 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
+
 const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
@@ -17,67 +19,92 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-app.post('/tasks', async (req, res) => {
+app.get('/zadania', async (req, res) => {
     try {
-        const { title } = req.body;
-        if (!title) {
-            return res.status(400).json({ error: 'Title is required' });
-        }
-        const newTask = await pool.query(
-            "INSERT INTO tasks (title) VALUES ($1) RETURNING *",
-            [title]
-        );
-        res.status(201).json(newTask.rows[0]);
+        const wszystkieZadania = await pool.query("SELECT * FROM zadania ORDER BY id ASC");
+        res.json(wszystkieZadania.rows);
     } catch (err) {
         console.error(err.message);
-        res.status(500).send('Server Error');
+        res.status(500).send('Błąd serwera');
     }
 });
 
-app.get('/tasks', async (req, res) => {
-    try {
-        const allTasks = await pool.query("SELECT * FROM tasks ORDER BY id");
-        res.json(allTasks.rows);
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
-    }
-});
-
-app.put('/tasks/:id', async (req, res) => {
+app.get('/zadania/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { completed } = req.body;
-        const updatedTask = await pool.query(
-            "UPDATE tasks SET completed = $1 WHERE id = $2 RETURNING *",
-            [completed, id]
-        );
+        const zadanie = await pool.query("SELECT * FROM zadania WHERE id = $1", [id]);
 
-        if (updatedTask.rows.length === 0) {
-            return res.status(404).json({ error: 'Task not found' });
+        if (zadanie.rows.length === 0) {
+            return res.status(404).json({ error: 'Nie znaleziono zadania' });
         }
-        res.json(updatedTask.rows[0]);
+        res.json(zadanie.rows[0]);
     } catch (err) {
         console.error(err.message);
-        res.status(500).send('Server Error');
+        res.status(500).send('Błąd serwera');
     }
 });
 
-app.delete('/tasks/:id', async (req, res) => {
+app.post('/zadania', async (req, res) => {
     try {
-        const { id } = req.params;
-        const deletedTask = await pool.query("DELETE FROM tasks WHERE id = $1 RETURNING *", [id]);
+        const { tytul, priorytet, termin_wykonania } = req.body;
 
-        if (deletedTask.rows.length === 0) {
-            return res.status(404).json({ error: 'Task not found' });
+        if (!tytul || typeof tytul !== 'string' || tytul.trim() === '') {
+            return res.status(400).json({ error: 'Tytuł jest wymagany i musi być tekstem.' });
         }
-        res.json({ message: `Task with id ${id} deleted successfully` });
+
+        const noweZadanie = await pool.query(
+            "INSERT INTO zadania (tytul, priorytet, termin_wykonania) VALUES ($1, $2, $3) RETURNING *",
+            [tytul, priorytet, termin_wykonania || null]
+        );
+        res.status(201).json(noweZadanie.rows[0]);
     } catch (err) {
         console.error(err.message);
-        res.status(500).send('Server Error');
+        res.status(500).send('Błąd serwera');
+    }
+});
+
+app.put('/zadania/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { tytul, priorytet, termin_wykonania, zakonczone } = req.body;
+
+        if (tytul !== undefined && (typeof tytul !== 'string' || tytul.trim() === '')) {
+             return res.status(400).json({ error: 'Tytuł nie może być pusty.' });
+        }
+        if (zakonczone !== undefined && typeof zakonczone !== 'boolean') {
+             return res.status(400).json({ error: 'Status ukończenia musi być wartością logiczną.' });
+        }
+
+        const zaktualizowaneZadanie = await pool.query(
+            "UPDATE zadania SET tytul = $1, priorytet = $2, termin_wykonania = $3, zakonczone = $4 WHERE id = $5 RETURNING *",
+            [tytul, priorytet, termin_wykonania, zakonczone, id]
+        );
+
+        if (zaktualizowaneZadanie.rows.length === 0) {
+            return res.status(404).json({ error: 'Nie znaleziono zadania' });
+        }
+        res.json(zaktualizowaneZadanie.rows[0]);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Błąd serwera');
+    }
+});
+
+app.delete('/zadania/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const usunieteZadanie = await pool.query("DELETE FROM zadania WHERE id = $1 RETURNING *", [id]);
+
+        if (usunieteZadanie.rows.length === 0) {
+            return res.status(404).json({ error: 'Nie znaleziono zadania' });
+        }
+        res.json({ message: `Zadanie o ID ${id} zostało pomyślnie usunięte.` });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Błąd serwera');
     }
 });
 
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`Serwer działa na porcie ${PORT}`);
 });
