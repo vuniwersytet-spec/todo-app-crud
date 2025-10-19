@@ -3,20 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Menedżer zadań</title>
+    <title>Menedżer Zadań</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <h1>Moja lista zadań</h1>
-        <div class="input-area">
-            <input type="text" id="taskInput" placeholder="Dodaj nowe zadanie...">
-            <button id="addButton">Dodaj</button>
+        <h1>Moja Lista Zadań</h1>
+        <div class="form-area">
+            <input type="hidden" id="taskIdInput">
+            <input type="text" id="titleInput" placeholder="Tytuł zadania...">
+            <input type="number" id="priorityInput" placeholder="Priorytet (np. 1, 2, 3)...">
+            <input type="date" id="dueDateInput">
+            <button id="actionButton">Dodaj Zadanie</button>
+            <button id="cancelButton" class="hidden">Anuluj</button>
         </div>
         <ul id="taskList">
-            </ul>
+        </ul>
     </div>
-
     <script src="script.js"></script>
 </body>
 </html>

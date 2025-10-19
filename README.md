@@ -1,52 +1,115 @@
-# **HOW-TO-RUN GUIDE (README)**
+# **Aplikacja Lista Zadań (CRUD)**
 
-This is a simple to-do list application with a Node.js backend and an HTML/JS frontend.
+Prosta aplikacja typu "to-do list" z backendem w Node.js i frontendem w HTML/JS.
 
-## **PREREQUISITES:**
+## **Wymagania wstępne:**
 
-* Node.js and npm  
-* PostgreSQL  
+* Node.js i npm
+* PostgreSQL
 * Git
 
-## **HOW TO RUN:**
+## **Instrukcja uruchomienia:**
 
-## **STEP 1: GET THE PROJECT**
+### **KROK 1: POBRANIE PROJEKTU**
 
-Open your terminal (Command Prompt, PowerShell, or Git Bash on Windows) and run the following commands:
+Otwórz terminal (Wiersz polecenia, PowerShell lub Git Bash w systemie Windows) i wykonaj następujące polecenia:
 
-1. git clone https://github.com/vuniwersytet-spec/todo-app-crud.git  
-2. cd todo-app-crud
+1.  `git clone https://github.com/vuniwersytet-spec/todo-app-crud.git`
+2.  `cd todo-app-crud`
 
-## **STEP 2: CONFIGURE THE BACKEND**
+### **KROK 2: KONFIGURACJA BACKENDU**
 
-1. Navigate to the backend folder:  
-   cd backend  
-2. Create a file named ".env" in the "backend" folder. Copy the text below into it.  
-   IMPORTANT: Make sure that DB\_USER and DB\_PASSWORD match your PostgreSQL settings.  
-   DB\_USER=root  
-   DB\_PASSWORD=root  
-   DB\_HOST=localhost  
-   DB\_PORT=5432  
-   DB\_DATABASE=todolist\_db  
-   PORT=5000  
-3. Install all dependencies (libraries):  
-   npm install
+1.  Przejdź do folderu `backend`:
+    `cd backend`
+2.  W folderze `backend` utwórz plik o nazwie `.env`. Skopiuj do niego poniższą zawartość.
+    **WAŻNE:** Upewnij się, że `DB_USER` i `DB_PASSWORD` odpowiadają Twoim ustawieniom PostgreSQL.
 
-## **STEP 3: PREPARE THE DATABASE**
+    ```
+    DB_USER=root
+    DB_PASSWORD=root
+    DB_HOST=localhost
+    DB_PORT=5432
+    DB_DATABASE=zadania_db
+    PORT=5000
+    ```
+3.  Zainstaluj wszystkie zależności (biblioteki), będąc w głównym folderze projektu:
+    `npm install`
 
-Make sure your PostgreSQL server is running. Then, run this command to automatically create the database and table:
+### **KROK 3: PRZYGOTOWANIE BAZY DANYCH**
 
-npm run db:init
+Upewnij się, że serwer PostgreSQL jest uruchomiony. Następnie, będąc w głównym folderze projektu, wykonaj to polecenie, aby automatycznie utworzyć bazę danych i tabelę:
 
-## **STEP 4: RUN THE APPLICATION**
+`npm run db:init`
 
-1. Start the server (backend):  
-   While in the "backend" folder, run the command:  
-   npm start  
-   You will see the message "Server is running on port 5000" in the terminal.  
-   LEAVE THIS TERMINAL WINDOW OPEN.  
-2. Open the user interface (frontend):  
-   Using your file explorer, find the "frontend" folder within the project.  
-   Double-click the "index.html" file to open it in your browser.
+### **KROK 4: URUCHOMIENIE APLIKACJI**
 
-The application is now ready to use.
+1.  Uruchom serwer (backend):
+    Będąc w głównym folderze projektu, uruchom polecenie:
+    `npm start`
+    W terminalu zobaczysz komunikat "Serwer działa na porcie 5000".
+    **POZOSTAW TO OKNO TERMINALA OTWARTE.**
+2.  Otwórz interfejs użytkownika (frontend):
+    Za pomocą eksploratora plików znajdź folder `frontend` w projekcie.
+    Kliknij dwukrotnie plik `index.html`, aby otworzyć go w przeglądarce.
+
+Aplikacja jest gotowa do użycia.
+
+---
+
+## **Opis Endpointów API**
+
+Baza URL: `http://localhost:5000`
+
+### Encja: `Zadanie`
+
+* `id`: `SERIAL` (klucz główny)
+* `tytul`: `VARCHAR(255)` (wymagany)
+* `priorytet`: `INTEGER` (domyślnie 1)
+* `termin_wykonania`: `DATE` (opcjonalny)
+* `zakonczone`: `BOOLEAN` (domyślnie `false`)
+
+### Dostępne operacje
+
+* **`GET /zadania`**
+    * **Opis:** Pobiera listę wszystkich zadań.
+    * **Odpowiedź (200 OK):** Tablica obiektów zadań.
+
+* **`GET /zadania/:id`**
+    * **Opis:** Pobiera jedno zadanie o podanym ID.
+    * **Odpowiedź (200 OK):** Obiekt zadania.
+    * **Odpowiedź (404 Not Found):** Jeśli zadanie nie istnieje.
+
+* **`POST /zadania`**
+    * **Opis:** Tworzy nowe zadanie.
+    * **Request Body (JSON):**
+        ```json
+        {
+          "tytul": "Nowe zadanie",
+          "priorytet": 2,
+          "termin_wykonania": "2025-12-31"
+        }
+        ```
+    * **Odpowiedź (201 Created):** Obiekt nowo utworzonego zadania.
+    * **Odpowiedź (400 Bad Request):** Jeśli `tytul` jest nieprawidłowy.
+
+* **`PUT /zadania/:id`**
+    * **Opis:** Aktualizuje istniejące zadanie.
+    * **Request Body (JSON):**
+        ```json
+        {
+          "tytul": "Zaktualizowany tytuł",
+          "priorytet": 3,
+          "termin_wykonania": "2026-01-15",
+          "zakonczone": true
+        }
+        ```
+    * **Odpowiedź (200 OK):** Obiekt zaktualizowanego zadania.
+    * **Odpowiedź (404 Not Found):** Jeśli zadanie nie istnieje.
+    * **Odpowiedź (400 Bad Request):** Jeśli dane są nieprawidłowe.
+
+* **`DELETE /zadania/:id`**
+    * **Opis:** Usuwa zadanie o podanym ID.
+    * **Odpowiedź (200 OK):** Komunikat o pomyślnym usunięciu.
+    * **Odpowiedź (404 Not Found):** Jeśli zadanie nie istnieje.
+
+---

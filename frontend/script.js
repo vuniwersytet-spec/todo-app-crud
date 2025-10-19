@@ -1,74 +1,154 @@
-const API_URL = 'http://127.0.0.1:5000';
+const API_URL = 'http://localhost:5000/zadania';
 
-const taskInput = document.getElementById('taskInput');
-const addButton = document.getElementById('addButton');
+const titleInput = document.getElementById('titleInput');
+const priorityInput = document.getElementById('priorityInput');
+const dueDateInput = document.getElementById('dueDateInput');
+const taskIdInput = document.getElementById('taskIdInput');
+const actionButton = document.getElementById('actionButton');
+const cancelButton = document.getElementById('cancelButton');
 const taskList = document.getElementById('taskList');
 
-async function fetchAndDisplayTasks() {
+let editMode = false;
+
+const resetForm = () => {
+    titleInput.value = '';
+    priorityInput.value = '';
+    dueDateInput.value = '';
+    taskIdInput.value = '';
+    actionButton.textContent = 'Dodaj Zadanie';
+    cancelButton.classList.add('hidden');
+    editMode = false;
+};
+
+const fetchZadania = async () => {
+    try {
+        const response = await fetch(API_URL);
+        if (!response.ok) throw new Error('Nie udało się pobrać zadań.');
+        return await response.json();
+    } catch (error) {
+        console.error(error);
+        alert(error.message);
+        return [];
+    }
+};
+
+const wyswietlZadania = (zadania) => {
     taskList.innerHTML = '';
-
-    const response = await fetch(`${API_URL}/tasks`);
-    const tasks = await response.json();
-
-    tasks.forEach(task => {
+    zadania.forEach(zadanie => {
         const li = document.createElement('li');
-        if (task.completed) {
-            li.classList.add('completed');
-        }
+        li.className = zadanie.zakonczone ? 'completed' : '';
 
-        const span = document.createElement('span');
-        span.textContent = task.title;
-        span.addEventListener('click', () => toggleTaskStatus(task.id, !task.completed));
+        const detailsDiv = document.createElement('div');
+        detailsDiv.className = 'task-details';
 
+        const titleSpan = document.createElement('span');
+        titleSpan.className = 'task-title';
+        titleSpan.textContent = zadanie.tytul;
+        titleSpan.addEventListener('click', () => przelaczStatusZadania(zadanie));
+        
+        const metaSpan = document.createElement('span');
+        metaSpan.className = 'task-meta';
+        const termin = zadanie.termin_wykonania ? new Date(zadanie.termin_wykonania).toLocaleDateString('pl-PL') : 'brak';
+        metaSpan.textContent = `Priorytet: ${zadanie.priorytet || 'N/A'}, Termin: ${termin}`;
+        
+        detailsDiv.appendChild(titleSpan);
+        detailsDiv.appendChild(metaSpan);
+
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'task-actions';
+
+        const editButton = document.createElement('button');
+        editButton.textContent = 'Edytuj';
+        editButton.className = 'edit-btn';
+        editButton.addEventListener('click', () => przygotujDoEdycji(zadanie));
+        
         const deleteButton = document.createElement('button');
         deleteButton.textContent = 'Usuń';
-        deleteButton.addEventListener('click', () => deleteTask(task.id));
+        deleteButton.className = 'delete-btn';
+        deleteButton.addEventListener('click', () => usunZadanie(zadanie.id));
 
-        li.appendChild(span);
-        li.appendChild(deleteButton);
+        actionsDiv.appendChild(editButton);
+        actionsDiv.appendChild(deleteButton);
+        
+        li.appendChild(detailsDiv);
+        li.appendChild(actionsDiv);
         taskList.appendChild(li);
     });
-}
+};
 
-async function addTask() {
-    const title = taskInput.value.trim();
-    if (!title) {
-        alert('Proszę wpisać treść zadania.');
+const odswiezListe = async () => {
+    const zadania = await fetchZadania();
+    wyswietlZadania(zadania);
+};
+
+const przygotujDoEdycji = (zadanie) => {
+    editMode = true;
+    taskIdInput.value = zadanie.id;
+    titleInput.value = zadanie.tytul;
+    priorityInput.value = zadanie.priorytet;
+    dueDateInput.value = zadanie.termin_wykonania ? zadanie.termin_wykonania.split('T')[0] : '';
+    actionButton.textContent = 'Zapisz Zmiany';
+    cancelButton.classList.remove('hidden');
+};
+
+const dodajLubAktualizujZadanie = async () => {
+    const tytul = titleInput.value.trim();
+    if (!tytul) {
+        alert('Proszę wpisać tytuł zadania.');
         return;
     }
 
-    await fetch(`${API_URL}/tasks`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ title: title }),
+    const zadanieData = {
+        tytul,
+        priorytet: priorityInput.value ? parseInt(priorityInput.value, 10) : 1,
+        termin_wykonania: dueDateInput.value || null
+    };
+
+    let url = API_URL;
+    let method = 'POST';
+
+    if (editMode) {
+        const id = taskIdInput.value;
+        const response = await fetch(`${API_URL}/${id}`);
+        const originalTask = await response.json();
+        zadanieData.zakonczone = originalTask.zakonczone;
+        
+        url = `${API_URL}/${id}`;
+        method = 'PUT';
+    }
+
+    await fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(zadanieData),
     });
 
-    taskInput.value = '';
-    fetchAndDisplayTasks();
-}
+    resetForm();
+    odswiezListe();
+};
 
-async function toggleTaskStatus(id, newStatus) {
-    await fetch(`${API_URL}/tasks/${id}`, {
+const przelaczStatusZadania = async (zadanie) => {
+    const zaktualizowaneZadanie = { ...zadanie, zakonczone: !zadanie.zakonczone };
+
+    await fetch(`${API_URL}/${zadanie.id}`, {
         method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ completed: newStatus }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(zaktualizowaneZadanie),
     });
 
-    fetchAndDisplayTasks();
-}
+    odswiezListe();
+};
 
-async function deleteTask(id) {
-    await fetch(`${API_URL}/tasks/${id}`, {
+const usunZadanie = async (id) => {
+    if (!confirm('Czy na pewno chcesz usunąć to zadanie?')) return;
+    
+    await fetch(`${API_URL}/${id}`, {
         method: 'DELETE',
     });
+    
+    odswiezListe();
+};
 
-    fetchAndDisplayTasks();
-}
-
-addButton.addEventListener('click', addTask);
-
-document.addEventListener('DOMContentLoaded', fetchAndDisplayTasks);
+actionButton.addEventListener('click', dodajLubAktualizujZadanie);
+cancelButton.addEventListener('click', resetForm);
+document.addEventListener('DOMContentLoaded', odswiezListe);
