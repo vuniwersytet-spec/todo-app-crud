@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:5000/zadania';
+const API_URL = '/zadania';
 
 const titleInput = document.getElementById('titleInput');
 const priorityInput = document.getElementById('priorityInput');

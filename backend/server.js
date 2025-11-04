@@ -5,12 +5,11 @@ const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
 
+const connectionString = process.env.DATABASE_URL;
+
 const pool = new Pool({
-    user: process.env.DB_USER,
-    host: process.env.DB_HOST,
-    database: process.env.DB_DATABASE,
-    password: process.env.DB_PASSWORD,
-    port: process.env.DB_PORT,
+    connectionString: connectionString,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
 const app = express();
@@ -18,6 +17,8 @@ const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
+
+app.use(express.static(path.join(__dirname, '../frontend')));
 
 app.get('/zadania', async (req, res) => {
     try {
@@ -77,7 +78,7 @@ app.put('/zadania/:id', async (req, res) => {
         const { tytul, priorytet, termin_wykonania, zakonczone } = req.body;
 
         if (tytul !== undefined && (typeof tytul !== 'string' || tytul.trim() === '')) {
-             return res.status(400).json({ error: 'Tytuł nie może być pusty.' });
+             return res.status(400).json({ error: 'Tytuł nie может быть pusty.' });
         }
         if (zakonczone !== undefined && typeof zakonczone !== 'boolean') {
              return res.status(400).json({ error: 'Status ukończenia musi być wartością logiczną.' });
@@ -111,6 +112,10 @@ app.delete('/zadania/:id', async (req, res) => {
         console.error(err.message);
         res.status(500).send('Błąd serwera');
     }
+});
+
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend', 'index.html'));
 });
 
 app.listen(PORT, () => {
