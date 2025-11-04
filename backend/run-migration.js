@@ -4,47 +4,24 @@ require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 const { Client } = require('pg');
 const fs = require('fs');
 
-const dbName = process.env.DB_DATABASE;
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+    console.error('Błąd: Zmienna środowiskowa DATABASE_URL не jest ustawiona.');
+    console.error('Upewnij się, że plik .env istnieje lub zmienna jest ustawiona na serwerze.');
+    process.exit(1);
+}
 
 const runMigration = async () => {
-    const adminClient = new Client({
-        user: process.env.DB_USER,
-        host: process.env.DB_HOST,
-        database: 'postgres',
-        password: process.env.DB_PASSWORD,
-        port: process.env.DB_PORT,
-    });
-
-    try {
-        await adminClient.connect();
-        console.log('Połączono z serwerem PostgreSQL w celu przygotowania bazy danych.');
-
-        const res = await adminClient.query(`SELECT 1 FROM pg_database WHERE datname = '${dbName}'`);
-
-        if (res.rowCount === 0) {
-            await adminClient.query(`CREATE DATABASE "${dbName}"`);
-            console.log(`Baza danych "${dbName}" została pomyślnie utworzona.`);
-        } else {
-            console.log(`Baza danych "${dbName}" już istnieje.`);
-        }
-    } catch (error) {
-        console.error('Wystąpił błąd podczas tworzenia bazy danych:', error);
-        process.exit(1);
-    } finally {
-        await adminClient.end();
-    }
-
+    
     const dbClient = new Client({
-        user: process.env.DB_USER,
-        host: process.env.DB_HOST,
-        database: dbName,
-        password: process.env.DB_PASSWORD,
-        port: process.env.DB_PORT,
+        connectionString: connectionString,
+        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
     });
 
     try {
         await dbClient.connect();
-        console.log(`Pomyślnie połączono z bazą danych "${dbName}".`);
+        console.log(`Pomyślnie połączono z bazą danych (Render).`);
 
         const migrationFile = path.join(__dirname, 'migrations', '001_create_zadania_table.sql');
         const migrationSQL = fs.readFileSync(migrationFile, 'utf8');
