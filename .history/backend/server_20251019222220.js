@@ -21,15 +21,7 @@ app.use(express.json());
 
 app.get('/zadania', async (req, res) => {
     try {
-        const { sort, order } = req.query;
-
-        const allowedSorts = ['id', 'priorytet', 'termin_wykonania'];
-        const allowedOrders = ['ASC', 'DESC'];
-
-        const sortColumn = allowedSorts.includes(sort) ? sort : 'id';
-        const sortOrder = allowedOrders.includes(order) ? order : 'ASC';
-
-        const wszystkieZadania = await pool.query(`SELECT * FROM zadania ORDER BY ${sortColumn} ${sortOrder}`);
+        const wszystkieZadania = await pool.query("SELECT * FROM zadania ORDER BY id ASC");
         res.json(wszystkieZadania.rows);
     } catch (err) {
         console.error(err.message);

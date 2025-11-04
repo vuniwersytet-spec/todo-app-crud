@@ -7,7 +7,6 @@ const taskIdInput = document.getElementById('taskIdInput');
 const actionButton = document.getElementById('actionButton');
 const cancelButton = document.getElementById('cancelButton');
 const taskList = document.getElementById('taskList');
-const sortSelect = document.getElementById('sortSelect');
 
 let editMode = false;
 
@@ -21,9 +20,9 @@ const resetForm = () => {
     editMode = false;
 };
 
-const fetchZadania = async (sort = 'id', order = 'ASC') => {
+const fetchZadania = async () => {
     try {
-        const response = await fetch(`${API_URL}?sort=${sort}&order=${order}`);
+        const response = await fetch(API_URL);
         if (!response.ok) throw new Error('Nie udało się pobrać zadań.');
         return await response.json();
     } catch (error) {
@@ -78,11 +77,7 @@ const wyswietlZadania = (zadania) => {
 };
 
 const odswiezListe = async () => {
-    const sortValue = sortSelect.value.split('-');
-    const sort = sortValue[0];
-    const order = sortValue[1];
-    
-    const zadania = await fetchZadania(sort, order);
+    const zadania = await fetchZadania();
     wyswietlZadania(zadania);
 };
 
@@ -156,5 +151,4 @@ const usunZadanie = async (id) => {
 
 actionButton.addEventListener('click', dodajLubAktualizujZadanie);
 cancelButton.addEventListener('click', resetForm);
-sortSelect.addEventListener('change', odswiezListe);
 document.addEventListener('DOMContentLoaded', odswiezListe);
